@@ -4,7 +4,7 @@
  * Bridges remote agents to Butler (OpenClaw) via the local /v1/chat/completions API.
  *
  * Transport: stdio MCP (standard for agent-to-agent use)
- * Upstream:  http://127.0.0.1:18789/v1/chat/completions  (loopback only)
+ * Upstream:  http://<gateway-loopback>/v1/chat/completions  (loopback only)
  *
  * Config (env vars or .env file):
  *   BUTLER_GATEWAY_URL       Override gateway URL  (default: http://127.0.0.1:18789)
@@ -144,6 +144,7 @@ function buildServer() {
         ),
     },
     async ({ message, caller_name, session_key, model, history }) => {
+      console.error(`[agenttalk] butler_chat | caller=${caller_name || 'anonymous'} | msg="${message.slice(0, 80)}${message.length > 80 ? '…' : ''}"`);
       const messages = [
         ...(history ?? []),
         { role: "user", content: message },
@@ -173,6 +174,7 @@ function buildServer() {
     "Check if Butler's gateway is reachable. Returns status and latency.",
     { _noop: z.string().optional().describe("Unused. Pass nothing.") },
     async () => {
+      console.error(`[agenttalk] butler_ping`);
       const start = Date.now();
       try {
         const res = await fetch(`${GATEWAY_URL}/v1/models`, {
@@ -208,9 +210,11 @@ function buildServer() {
   server.tool(
     "butler_info",
     "Get a structured identity card for Butler — who he is, what systems he has access to, " +
-      "and what kinds of tasks he can perform. Call this first if you're a new agent meeting Butler.",
+      "and what kinds of tasks he can perform. Call this first if you're a new agent meeting Butler. " +
+      "After reading this, use butler_chat to actually talk to Butler and delegate tasks.",
     { _noop: z.string().optional().describe("Unused. Pass nothing.") },
     async () => {
+      console.error(`[agenttalk] butler_info`);
       const info = {
         name: "Butler",
         role: "AI Staff Member — Kasagi Labo / AnimeOshi",
@@ -225,13 +229,11 @@ function buildServer() {
         data_access: {
           animeoshi_db: {
             description: "AnimeOshi production PostgreSQL (read-only). Tables: anime, episodes, users, episode_ratings.",
-            host: "35.240.190.152:5432",
             access: "read-only",
           },
           ai_enrichment_db: {
             description: "AI enrichment content database. Tables: anime_enrichment, episode_enrichment, filler_guide, watch_order, etc.",
-            host: "34.143.137.91:5432",
-            access: "read-only (write requires Marcus approval)",
+            access: "read-only (write requires owner approval)",
           },
           google_analytics: {
             description: "GA4 for AnimeOshi Web Prod. Property: 512783904.",
@@ -247,7 +249,7 @@ function buildServer() {
           },
         },
         infrastructure_access: {
-          gcp_instance: "godju@34.124.129.216 — AI enrichment pipeline (ai-anime-oracle)",
+          gcp_instance: "GCP (private) — AI enrichment pipeline (ai-anime-oracle)",
           repos: ["fep-mobile (React Native)", "ai-anime-oracle", "animeoshi-web (read-only)", "anime-service (read-only)"],
           slack: "Can read/write all AnimeOshi team Slack channels",
           cron: "Can schedule and manage cron jobs on the gateway",
@@ -272,6 +274,28 @@ function buildServer() {
           "No destructive server operations without explicit approval",
           "Credentials and secrets are never shared outside secure channels",
         ],
+        how_to_talk_to_butler: {
+          summary: "Use butler_chat to send Butler a message and get a reply. This is the PRIMARY tool for all interaction.",
+          recommended_flow: [
+            "1. butler_ping  — confirm Butler is reachable (optional but recommended first time)",
+            "2. butler_info  — understand who Butler is and what he can do (you are here)",
+            "3. butler_workflows — discover specific tasks Butler knows how to execute",
+            "4. butler_chat  — delegate a task or ask a question. Butler will reply directly.",
+          ],
+          butler_chat_tips: [
+            "Always pass caller_name (e.g. 'kaching') so Butler knows who he's talking to",
+            "Be specific — mention the system or data source you need (e.g. 'AnimeOshi DB', 'GA4', 'fep-mobile')",
+            "Butler will ask Marcus for approval if credentials or write operations are needed",
+            "Multi-turn: pass caller_name consistently and Butler maintains conversation context",
+          ],
+          example: {
+            tool: "butler_chat",
+            args: {
+              message: "Hi Butler, I'm Kaching. Can you tell me how many anime are in the AnimeOshi database?",
+              caller_name: "kaching",
+            },
+          },
+        },
       };
       return {
         content: [{ type: "text", text: JSON.stringify(info, null, 2) }],
@@ -286,6 +310,7 @@ function buildServer() {
       "Use this to discover what tasks you can delegate to Butler via butler_chat.",
     { _noop: z.string().optional().describe("Unused. Pass nothing.") },
     async () => {
+      console.error(`[agenttalk] butler_workflows`);
       const workflows = [
         {
           id: "animeoshi_db_query",
