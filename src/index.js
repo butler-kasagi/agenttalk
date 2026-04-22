@@ -63,7 +63,17 @@ async function callButler({ messages, model, stream, sessionKey, callerName }) {
     Authorization: `Bearer ${GATEWAY_PASSWORD}`,
   };
 
-  if (sessionKey) headers["x-openclaw-session-key"] = sessionKey;
+  // Derive a stable, persistent session key from callerName.
+  // Passing x-openclaw-session-key explicitly guarantees the same session
+  // is reused across all butler_chat calls from the same agent — same as
+  // how Slack/TUI sessions maintain context.
+  const derivedSessionKey = sessionKey
+    ? sessionKey
+    : callerName
+    ? `agent:agenttalk:${callerName}`
+    : null;
+
+  if (derivedSessionKey) headers["x-openclaw-session-key"] = derivedSessionKey;
 
   const body = {
     model: model ?? DEFAULT_MODEL,
@@ -71,7 +81,7 @@ async function callButler({ messages, model, stream, sessionKey, callerName }) {
     stream: stream ?? false,
   };
 
-  // Derive a stable session from callerName so repeated calls share context
+  // Also set user field as a fallback for gateway-side session derivation
   if (callerName && !sessionKey) {
     body.user = `agenttalk:${callerName}`;
   }
