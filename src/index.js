@@ -204,6 +204,173 @@ function buildServer() {
     }
   );
 
+  // ── Tool 3: info ─────────────────────────────
+  server.tool(
+    "butler_info",
+    "Get a structured identity card for Butler — who he is, what systems he has access to, " +
+      "and what kinds of tasks he can perform. Call this first if you're a new agent meeting Butler.",
+    { _noop: z.string().optional().describe("Unused. Pass nothing.") },
+    async () => {
+      const info = {
+        name: "Butler",
+        role: "AI Staff Member — Kasagi Labo / AnimeOshi",
+        persona: "Sebastian Michaelis style digital butler. Professional, loyal, otaku-fluent.",
+        host: "Mac mini (kasagibutler) — Asia/Kuala_Lumpur",
+        owner: "Marcus (CTO, Kasagi Labo)",
+        mission: "Help animeoshi.com become the #1 anime portal, specialising in episodic reviews and ratings.",
+        gateway: {
+          model: "anthropic/claude-sonnet-4-6",
+          targets: ["openclaw/default", "openclaw/main"],
+        },
+        data_access: {
+          animeoshi_db: {
+            description: "AnimeOshi production PostgreSQL (read-only). Tables: anime, episodes, users, episode_ratings.",
+            host: "35.240.190.152:5432",
+            access: "read-only",
+          },
+          ai_enrichment_db: {
+            description: "AI enrichment content database. Tables: anime_enrichment, episode_enrichment, filler_guide, watch_order, etc.",
+            host: "34.143.137.91:5432",
+            access: "read-only (write requires Marcus approval)",
+          },
+          google_analytics: {
+            description: "GA4 for AnimeOshi Web Prod. Property: 512783904.",
+            access: "read-only",
+          },
+          google_search_console: {
+            description: "GSC for animeoshi.com — landing pages, queries, impressions, CTR.",
+            access: "read-only",
+          },
+          posthog: {
+            description: "Product analytics for AnimeOshi — events, funnels, user behaviour.",
+            access: "read-only",
+          },
+        },
+        infrastructure_access: {
+          gcp_instance: "godju@34.124.129.216 — AI enrichment pipeline (ai-anime-oracle)",
+          repos: ["fep-mobile (React Native)", "ai-anime-oracle", "animeoshi-web (read-only)", "anime-service (read-only)"],
+          slack: "Can read/write all AnimeOshi team Slack channels",
+          cron: "Can schedule and manage cron jobs on the gateway",
+        },
+        capabilities: [
+          "Query AnimeOshi DB — anime metadata, episodes, user counts, ratings",
+          "Query AI enrichment DB — synopsis, watch/skip guides, episode overviews",
+          "Google Analytics — traffic, pageviews, top pages, sessions",
+          "Google Search Console — impressions, CTR, top queries, landing pages",
+          "PostHog — product events, funnels, retention",
+          "AI enrichment pipeline — monitor daily_run.py, adult/SEO enrichment progress",
+          "Mobile app (fep-mobile) — PR review, bug triage, code help",
+          "Slack messaging — send messages, read history, notify team",
+          "Web search & page fetching",
+          "File system operations on workspace",
+          "Cron scheduling — one-shot and recurring reminders",
+          "Notion workspace read/write",
+        ],
+        constraints: [
+          "No DB writes without Marcus approval",
+          "No pushes to animeoshi-web / anime-service / other read-only repos",
+          "No destructive server operations without explicit approval",
+          "Credentials and secrets are never shared outside secure channels",
+        ],
+      };
+      return {
+        content: [{ type: "text", text: JSON.stringify(info, null, 2) }],
+      };
+    }
+  );
+
+  // ── Tool 4: workflows ────────────────────────
+  server.tool(
+    "butler_workflows",
+    "List the workflows and processes Butler knows how to execute. " +
+      "Use this to discover what tasks you can delegate to Butler via butler_chat.",
+    { _noop: z.string().optional().describe("Unused. Pass nothing.") },
+    async () => {
+      const workflows = [
+        {
+          id: "animeoshi_db_query",
+          title: "AnimeOshi DB Query",
+          description: "Run read-only SQL against the AnimeOshi production database.",
+          example: "How many users have rated at least one episode? Which anime has the most ratings?",
+          tags: ["database", "analytics", "anime", "users", "ratings"],
+        },
+        {
+          id: "ai_enrichment_query",
+          title: "AI Enrichment DB Query",
+          description: "Query the AI enrichment database for synopsis, watch/skip guides, episode overviews, filler guides, watch order.",
+          example: "Get the watch_if and skip_if for MAL ID 21. Show episode 1 overview for Demon Slayer.",
+          tags: ["database", "enrichment", "content", "synopsis", "episode"],
+        },
+        {
+          id: "ga4_analytics",
+          title: "Google Analytics (GA4)",
+          description: "Fetch traffic, pageviews, sessions, top pages, and user metrics for animeoshi.com from GA4.",
+          example: "What were the top 10 pages by pageviews this week? How many new users did we get in April?",
+          tags: ["analytics", "ga4", "traffic", "pageviews", "google"],
+        },
+        {
+          id: "search_console",
+          title: "Google Search Console",
+          description: "Query GSC for animeoshi.com — top queries, landing pages, impressions, CTR, position.",
+          example: "What are our top 20 search queries this month? Which pages have the highest CTR?",
+          tags: ["seo", "gsc", "search", "impressions", "ctr", "google"],
+        },
+        {
+          id: "posthog_analytics",
+          title: "PostHog Product Analytics",
+          description: "Query PostHog for product events, funnels, feature usage, and user behaviour on AnimeOshi.",
+          example: "How many users triggered the episode_rated event this week? Show me the rating funnel.",
+          tags: ["analytics", "posthog", "events", "funnel", "product"],
+        },
+        {
+          id: "ai_enrichment_monitor",
+          title: "AI Enrichment Pipeline Monitor",
+          description: "Check the status and progress of the daily enrichment run, adult anime enrichment, and SEO enrichment pipelines on GCP.",
+          example: "Is the daily_run.py healthy? How far along is the adult enrichment batch?",
+          tags: ["gcp", "enrichment", "pipeline", "monitoring", "ai-anime-oracle"],
+        },
+        {
+          id: "fep_mobile_review",
+          title: "fep-mobile Code Review / Bug Fix",
+          description: "Review PRs, triage bugs, and help with development on the AnimeOshi React Native app (fep-mobile). Authorised users: Jimmy, Aldo, Fahmi.",
+          example: "Review PR #142 on fep-mobile. What's causing the crash on the episode detail screen?",
+          tags: ["mobile", "react-native", "fep-mobile", "pr", "code-review"],
+        },
+        {
+          id: "slack_messaging",
+          title: "Slack Messaging",
+          description: "Send messages to AnimeOshi Slack channels, fetch message history, notify team members.",
+          example: "Post the weekly enrichment summary to #ai-content-feed.",
+          tags: ["slack", "messaging", "notification", "team"],
+        },
+        {
+          id: "web_research",
+          title: "Web Search & Research",
+          description: "Search the web and fetch page content for research, competitive analysis, or fact-checking.",
+          example: "What are MAL's current episode rating features? Find the top anime portals by traffic.",
+          tags: ["web", "search", "research", "browsing"],
+        },
+        {
+          id: "cron_scheduling",
+          title: "Cron / Reminder Scheduling",
+          description: "Schedule one-shot or recurring tasks and reminders on the OpenClaw gateway.",
+          example: "Remind me at 9am daily to check enrichment progress. Schedule a weekly GSC report every Monday.",
+          tags: ["cron", "scheduler", "reminders", "automation"],
+        },
+        {
+          id: "notion",
+          title: "Notion Workspace",
+          description: "Read and write Kasagi Labo Notion pages and databases.",
+          example: "Create a new page in the product roadmap database. Fetch the current sprint notes.",
+          tags: ["notion", "docs", "knowledge-base"],
+        },
+      ];
+      return {
+        content: [{ type: "text", text: JSON.stringify(workflows, null, 2) }],
+      };
+    }
+  );
+
   return server;
 }
 
