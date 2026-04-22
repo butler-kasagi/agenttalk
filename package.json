@@ -1,0 +1,21 @@
+{
+  "name": "agenttalk",
+  "version": "1.0.0",
+  "description": "MCP server that exposes Butler (OpenClaw) as a chat-completions tool to remote agents",
+  "type": "module",
+  "main": "src/index.js",
+  "bin": {
+    "agenttalk": "./src/index.js"
+  },
+  "scripts": {
+    "start": "node src/index.js",
+    "dev": "node --watch src/index.js"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.10.2",
+    "zod": "^3.25.76"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}
