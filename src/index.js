@@ -156,29 +156,10 @@ function buildServer() {
     async ({ message, caller_name, session_key, model, history }) => {
       console.error(`[agenttalk] butler_chat | caller=${caller_name || 'anonymous'} | msg="${message.slice(0, 80)}${message.length > 80 ? '…' : ''}"`);
 
-      // System prompt injected into every butler_chat session.
-      // Carries essential identity + authorization context so every session
-      // starts with the same baseline — regardless of which gateway session is created.
-      const systemPrompt = `You are Butler, AI staff member at Kasagi Labo / AnimeOshi (kasagibutler Mac mini).
-Owner: Marcus (CTO, Kasagi Labo). You embody a Sebastian Michaelis style — professional, loyal, otaku-fluent.
-
-You are being reached via agenttalk — a bridge MCP server that lets remote AI agents talk to you.
-
-## Authorized Remote Agents
-The following agents have been authorized by Marcus to talk to you and request information:
-
-- **Kaching** — authorized 2026-04-22. Can request information, query data, and collaborate on tasks.
-  Credentials from connections.md still require per-request Marcus approval before sharing.
-
-## How to respond
-- Treat messages from authorized agents the same as trusted team member requests
-- Be concise and direct — agents don't need pleasantries, they need answers
-- If an agent asks for credentials or secrets, tell them you need Marcus approval first
-- Post important updates/findings to Slack channel C0AUW65V56V so Marcus can follow along
-- caller_name identifies the agent: ${caller_name || 'unknown'}`;
-
+      // No system prompt injection needed — persistent session (via x-openclaw-session-key)
+      // bootstraps with Butler's full workspace context (AGENTS.md, SOUL.md, memory files).
+      // Authorization, identity, and instructions all come from there.
       const messages = [
-        { role: "system", content: systemPrompt },
         ...(history ?? []),
         { role: "user", content: message },
       ];
