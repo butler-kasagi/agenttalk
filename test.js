@@ -7,10 +7,13 @@ import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { StreamableHTTPClientTransport } from "@modelcontextprotocol/sdk/client/streamableHttp.js";
 
 const BASE_URL = process.env.AGENTTALK_URL ?? "http://127.0.0.1:3741/mcp";
+const API_KEY = process.env.AGENTTALK_API_KEY ?? "";
 
 console.log(`Connecting to ${BASE_URL}...\n`);
 
-const transport = new StreamableHTTPClientTransport(new URL(BASE_URL));
+const transport = new StreamableHTTPClientTransport(new URL(BASE_URL), API_KEY ? {
+  requestInit: { headers: { Authorization: `Bearer ${API_KEY}` } },
+} : undefined);
 const client = new Client({ name: "agenttalk-test", version: "1.0.0" });
 
 await client.connect(transport);

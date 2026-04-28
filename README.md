@@ -32,6 +32,11 @@ cp .env.example .env
 # Edit .env — set BUTLER_GATEWAY_PASSWORD
 ```
 
+For local development without the real Butler gateway, set:
+```bash
+AGENTTALK_MOCK_BUTLER=1
+```
+
 ---
 
 ## Running
@@ -65,6 +70,37 @@ Send a message to Butler and get a reply.
 
 ### `butler_ping`
 Check if Butler's gateway is reachable. Returns status and latency.
+
+### `butler_status`
+Operational status for AgentTalk and Butler. Use this before important delegated work.
+
+### `butler_reset_session`
+Starts a fresh persistent Butler context for a `caller_name`. Useful when a conversation drifts or an agent needs a clean slate.
+
+### `butler_info`
+Explains Butler's identity, constraints, capabilities, and recommended prompt patterns.
+
+### `butler_workflows`
+Lists concrete workflows Butler knows how to execute, including GA4, Google Search Console, PostHog, AnimeOshi backend DB, Japanese translation, GameTheory, and Simula.
+
+---
+
+## How This MCP Guides Connected Agents
+
+MCP servers do not directly inject a hidden system prompt into clients. This project guides connected agents through:
+
+- clear tool names and descriptions returned by MCP `listTools`
+- the `butler_info` tool, which tells agents who Butler is, what systems he can use, and how to prompt him
+- the `butler_workflows` tool, which gives capability-specific examples
+- the `butler_status` tool, which tells agents whether the bridge and gateway are ready
+
+Best practice for connected agents:
+
+1. Call `butler_status` when reliability matters.
+2. Call `butler_info` or `butler_workflows` if unsure what Butler can do.
+3. Call `butler_chat` with a stable `caller_name`.
+4. Mention the desired Butler-side source/tool explicitly: `GA4`, `GSC`, `PostHog`, `AnimeOshi backend DB`, `Japanese translation`, `GameTheory`, or `Simula`.
+5. Call `butler_reset_session` when the current Butler context is no longer useful.
 
 ---
 
