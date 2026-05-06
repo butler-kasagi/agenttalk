@@ -100,7 +100,24 @@ Best practice for connected agents:
 2. Call `butler_info` or `butler_workflows` if unsure what Butler can do.
 3. Call `butler_chat` with a stable `caller_name`.
 4. Mention the desired Butler-side source/tool explicitly: `GA4`, `GSC`, `PostHog`, `AnimeOshi backend DB`, `Japanese translation`, `GameTheory`, or `Simula`.
-5. Call `butler_reset_session` when the current Butler context is no longer useful.
+5. For operational work, send **one concrete step at a time** and ask Butler to confirm the result before the next step.
+6. Do **not** send large multi-step execution prompts as one blocking `butler_chat` call. They can time out and make completion status ambiguous.
+7. Call `butler_reset_session` when the current Butler context is no longer useful.
+
+### Stepwise delegation rule
+
+Use Butler like an operator in a controlled handoff: **one step → confirmation → next step**.
+
+Good pattern:
+- Ask Butler to perform one action, e.g. “check what owns port 2222 and report the process.”
+- Wait for Butler’s result.
+- Confirm the result is acceptable.
+- Then send the next action, e.g. “now stop the old static server” or “now start `npm start`.”
+
+Avoid:
+- Asking Butler to pull, stop processes, start services, verify APIs, diagnose failures, and summarize everything in one long prompt.
+- Assuming work completed after a timeout. If a call times out, send a short status-check prompt like: “Did the previous step complete? Reply with only current status.”
+- Continuing dependent steps until Butler has confirmed the previous step.
 
 ---
 

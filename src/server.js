@@ -41,7 +41,7 @@ export function buildServer({ config, runtime = {} }) {
 
   server.tool(
     "butler_chat",
-    "Delegate a task or question to Butler. Always pass caller_name for memory. Mention desired source/tool explicitly: GA4, GSC, PostHog, AnimeOshi backend DB, Japanese translation, GameTheory, or Simula.",
+    "Delegate a task or question to Butler. Always pass caller_name for memory. For operational work, send one concrete step at a time and confirm Butler's result before the next step; avoid large multi-step blocking prompts. Mention desired source/tool explicitly: GA4, GSC, PostHog, AnimeOshi backend DB, Japanese translation, GameTheory, or Simula.",
     {
       message: z.string().describe("Specific request for Butler. Include date ranges, data sources, output format, and approval constraints when relevant."),
       caller_name: z.string().optional().describe("Stable caller identity used for persistent Butler context, e.g. 'claude-agent-1'."),

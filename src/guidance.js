@@ -18,14 +18,30 @@ export function buildButlerInfo(config) {
       "2. Call butler_workflows if you are unsure which capability fits.",
       "3. Use butler_chat with a stable caller_name for context continuity.",
       "4. Ask for specific source/tool usage: GA4, GSC, PostHog, backend DB, Japanese translation, GameTheory, or Simula.",
-      "5. Use butler_reset_session if the conversation drifts or you need a clean context.",
+      "5. For operational work, delegate one concrete step at a time and ask Butler to confirm the result before sending the next step.",
+      "6. Do not send large multi-step execution prompts as one blocking butler_chat call; they can time out and make status ambiguous.",
+      "7. Use butler_reset_session if the conversation drifts or you need a clean context.",
     ],
+    stepwise_delegation_rule: {
+      summary: "Use Butler like an operator in a controlled handoff: one step, one confirmation, then continue.",
+      do: [
+        "Send a short request for the next specific action.",
+        "Ask Butler to report the command/result/status for that action.",
+        "Only proceed to the next action after confirming the previous one succeeded.",
+        "For deploy/run/debug work, verify observable state after each change: process, port, HTTP status, JSON shape, logs, or git commit.",
+      ],
+      avoid: [
+        "Do not ask Butler to pull, stop processes, start services, run checks, diagnose errors, and summarize everything in one long prompt.",
+        "Do not assume work completed if butler_chat times out; send a short status-check prompt instead.",
+        "Do not continue with dependent steps until Butler has confirmed the previous step.",
+      ],
+    },
     prompt_patterns: {
       analytics: "Use GA4/GSC/PostHog as appropriate. Include date range, metrics, filters, and a concise interpretation.",
       database: "Use the AnimeOshi backend database read-only. State the table/domain, desired fields, and aggregation.",
       translation: "Use Japanese translation tools. Preserve anime terminology, honorifics, tone, and glossary constraints.",
       strategy: "Use GameTheory/Simula to model incentives, scenarios, risks, and recommended moves.",
-      operations: "If a write/destructive action is needed, ask Marcus for approval before executing.",
+      operations: "Use stepwise delegation: ask Butler to do one concrete action, report the result, then wait for confirmation before the next action. If a write/destructive action is needed, ask Marcus for approval before executing.",
     },
     capabilities: [
       "Google Search Console — queries, pages, CTR, impressions, SEO opportunities",
